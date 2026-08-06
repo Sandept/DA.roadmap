@@ -190,26 +190,7 @@ function openSidebar(dayNum) {
   });
   body.appendChild(topicsList);
 
-  // Resources
-  if (data.resources && data.resources.length) {
-    const resTitle = el('div', 'sb-section-title');
-    resTitle.textContent = '🔗 Free Resources';
-    body.appendChild(resTitle);
-    const resList = el('ul', 'sb-resources');
-    data.resources.forEach(r => {
-      const li = el('li');
-      const badge = el('span', 'sb-res-badge ' + r.type);
-      badge.textContent = r.type;
-      const link = el('a');
-      link.textContent = r.title;
-      link.href = r.url;
-      link.target = '_blank';
-      li.appendChild(badge);
-      li.appendChild(link);
-      resList.appendChild(li);
-    });
-    body.appendChild(resList);
-  }
+  // Resources section removed per user request
 
   overlay.classList.remove('hidden');
   panel.classList.remove('hidden');
@@ -283,7 +264,7 @@ function drawConnections() {
 
     // Determine if nodes are roughly on the same vertical level (same row)
     const isSameRow = Math.abs(fR.top - tR.top) < 50;
-    
+
     let x1, y1, x2, y2, d;
 
     if (isSameRow) {
@@ -322,11 +303,11 @@ function drawConnections() {
 
         if (radius > 0) {
           d = `M${x1},${y1} ` +
-              `L${x1},${midY - dirY * radius} ` +
-              `Q${x1},${midY} ${x1 + dirX * radius},${midY} ` +
-              `L${x2 - dirX * radius},${midY} ` +
-              `Q${x2},${midY} ${x2},${midY + dirY * radius} ` +
-              `L${x2},${y2}`;
+            `L${x1},${midY - dirY * radius} ` +
+            `Q${x1},${midY} ${x1 + dirX * radius},${midY} ` +
+            `L${x2 - dirX * radius},${midY} ` +
+            `Q${x2},${midY} ${x2},${midY + dirY * radius} ` +
+            `L${x2},${y2}`;
         } else {
           d = `M${x1},${y1} L${x2},${y2}`;
         }
