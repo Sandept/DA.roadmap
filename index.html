@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Data Analyst Roadmap - 21 Day Tracking System. Master data analysis step by step.">
+    <title>Data Analyst Roadmap — 21 Day Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@400;700&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Animated BG elements -->
+    <div class="anime-bg" aria-hidden="true">
+        <div class="brush brush-1"></div>
+        <div class="brush brush-2"></div>
+        <div class="brush brush-3"></div>
+        <div class="brush brush-4"></div>
+        <div class="brush brush-5"></div>
+        <div class="ink-circle c1"></div>
+        <div class="ink-circle c2"></div>
+        <div class="ink-circle c3"></div>
+        <div class="sakura s1">🌸</div>
+        <div class="sakura s2">🌸</div>
+        <div class="sakura s3">🌸</div>
+        <div class="sakura s4">🌸</div>
+        <div class="sakura s5">🌸</div>
+        <div class="sakura s6">🌸</div>
+        <div class="sakura s7">🌸</div>
+        <div class="sakura s8">🌸</div>
+        <div class="wave wave-1"></div>
+        <div class="wave wave-2"></div>
+    </div>
+
+    <!-- Header -->
+    <header id="main-header">
+        <div class="header-inner">
+            <div class="header-left">
+                <a href="#" class="logo">
+                    <svg class="logo-icon" fill="none" height="26" width="26" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 3v16a2 2 0 0 0 2 2h16" class="chart-axis"/>
+                        <path d="M8 17v-3" class="chart-bar bar-1"/>
+                        <path d="M13 17V9" class="chart-bar bar-2"/>
+                        <path d="M18 17V5" class="chart-bar bar-3"/>
+                    </svg>
+                    <span>DataAnalyst</span>. roadmap
+                </a>
+            </div>
+            <div class="header-center">
+                <span class="header-tagline">21-Day Learning Journey</span>
+            </div>
+            <div class="header-right">
+                <div class="progress-pill" id="header-progress">
+                    <div class="progress-pill-bar" id="header-progress-bar"></div>
+                    <span class="progress-pill-text" id="header-progress-text">0%</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Banner -->
+    <section id="hero-banner">
+        <div class="hero-inner">
+            <p class="hero-subtitle">Step by step guide to becoming a</p>
+            <h1 id="hero-title">Data Analyst</h1>
+            <p class="hero-desc">Complete this roadmap in <strong>21 days</strong> — track your daily progress</p>
+            <div class="hero-stats" id="hero-stats">
+                <div class="stat-card">
+                    <span class="stat-num" id="stat-completed">0</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-num" id="stat-remaining">21</span>
+                    <span class="stat-label">Remaining</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-num" id="stat-percent">0%</span>
+                    <span class="stat-label">Progress</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Roadmap Canvas -->
+    <main id="roadmap-canvas">
+        <svg id="connections-svg" aria-hidden="true"></svg>
+        <div id="roadmap-content"></div>
+    </main>
+
+    <!-- Sidebar Panel -->
+    <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+    <aside id="sidebar-panel" class="sidebar-panel hidden">
+        <div class="sidebar-header">
+            <div class="sidebar-status-btns">
+                <button class="status-btn learning" id="sb-learning">📖 Learning</button>
+                <button class="status-btn done" id="sb-done">✅ Done</button>
+                <button class="status-btn skip" id="sb-skip">⏭ Skip</button>
+                <button class="close-btn" id="sb-close">✕</button>
+            </div>
+        </div>
+        <div class="sidebar-body" id="sidebar-body"></div>
+    </aside>
+
+    <footer id="main-footer">
+        <p>Data Analyst Roadmap Tracker &copy; 2026 — Inspired by
+            <a href="https://roadmap.sh/data-analyst" target="_blank">roadmap.sh</a>
+        </p>
+    </footer>
+
+    <script src="roadmap-data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
