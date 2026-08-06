@@ -1,12 +1,14 @@
 // ===== STATE =====
 let progress = JSON.parse(localStorage.getItem('da-progress') || '{}');
 let activeDay = null;
+let currentNoteDay = 'global';
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   renderRoadmap();
   updateStats();
   bindSidebar();
+  bindNotesPanel(); // New Notes binding
   setTimeout(drawConnections, 400);
   window.addEventListener('resize', debounce(drawConnections, 200));
 });
@@ -214,6 +216,16 @@ function bindSidebar() {
   document.getElementById('sb-learning').addEventListener('click', () => setStatus('learning'));
   document.getElementById('sb-done').addEventListener('click', () => setStatus('done'));
   document.getElementById('sb-skip').addEventListener('click', () => setStatus('skip'));
+  const sbNotesBtn = document.getElementById('sb-notes-btn');
+  if (sbNotesBtn) {
+    sbNotesBtn.addEventListener('click', () => {
+      if (activeDay) {
+        const dayToOpen = activeDay; // Save it before closeSidebar clears it
+        closeSidebar();
+        setTimeout(() => window.openNotes(dayToOpen), 300);
+      }
+    });
+  }
 }
 
 function setStatus(status) {
@@ -233,6 +245,359 @@ function updateStatusButtons(dayNum) {
   document.getElementById('sb-learning').classList.toggle('active', s === 'learning');
   document.getElementById('sb-done').classList.toggle('active', s === 'done');
   document.getElementById('sb-skip').classList.toggle('active', s === 'skip');
+}
+
+// ===== IndexedDB for Attachments =====
+const DB_NAME = 'DataAnalystNotesDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'attachments';
+
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      }
+    };
+  });
+}
+
+async function saveAttachmentLocal(dayNum, file, base64Data) {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.add({
+      dayNum: dayNum,
+      name: file.name,
+      type: file.type,
+      dataUrl: `data:${file.type};base64,${base64Data}`,
+      timestamp: Date.now()
+    });
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getAttachmentsLocal(dayNum) {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const all = req.result;
+      // Because IndexedDB getAll doesn't filter easily, filter in memory
+      resolve(all.filter(a => String(a.dayNum) === String(dayNum)));
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteAttachmentLocal(id) {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+  async function renderAttachments() {
+    const gallery = document.getElementById('attachments-gallery');
+    if (!gallery) return;
+    gallery.innerHTML = '<span style="font-size: 12px; color: var(--gray600);">Loading notes...</span>';
+    
+    try {
+      // Get remote attachments (from GDrive) and local (if any)
+      let items = [];
+      if (typeof remoteAttachments !== 'undefined' && remoteAttachments.length > 0) {
+        // Filter remote files for this day based on filename prefix e.g. "[Day 1]"
+        const prefix = currentNoteDay === 'global' ? '[Global]' : `[Day ${currentNoteDay}]`;
+        items = remoteAttachments.filter(a => a.name.startsWith(prefix));
+      }
+      
+      const localItems = await getAttachmentsLocal(currentNoteDay);
+      // Merge unique by name
+      const allItems = [...items, ...localItems].reduce((acc, curr) => {
+        if (!acc.find(i => i.name === curr.name)) acc.push(curr);
+        return acc;
+      }, []);
+
+      gallery.innerHTML = '';
+      if (allItems.length === 0) {
+        gallery.innerHTML = '<span style="font-size: 12px; color: var(--gray400);">No notes available for this topic yet.</span>';
+        return;
+      }
+      
+      allItems.forEach(item => {
+        const div = document.createElement('div');
+        div.style = 'display: flex; align-items: center; justify-content: space-between; background: var(--gray100); padding: 8px; border-radius: 6px; border: 1px solid var(--gray200); transition: all 0.2s;';
+        
+        const left = document.createElement('div');
+        left.style = 'display: flex; align-items: center; gap: 8px; overflow: hidden; cursor: pointer; flex: 1;';
+        
+        const isImage = (item.mimeType && item.mimeType.startsWith('image/')) || (item.type && item.type.startsWith('image/'));
+        
+        if (isImage && item.dataUrl) {
+          const img = document.createElement('img');
+          img.src = item.dataUrl;
+          img.style = 'width: 40px; height: 40px; object-fit: cover; border-radius: 4px;';
+          left.appendChild(img);
+        } else {
+          const icon = document.createElement('div');
+          icon.textContent = isImage ? '🖼️' : (item.name.includes('.pdf') ? '📕' : '📄');
+          icon.style = 'font-size: 24px; width: 40px; text-align: center;';
+          left.appendChild(icon);
+        }
+        
+        const name = document.createElement('span');
+        name.textContent = item.name.replace(/\[.*?\]\s*/, ''); // hide prefix
+        name.style = 'font-size: 13px; font-weight: 700; color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+        left.appendChild(name);
+        
+        // Open Viewer Modal on click
+        left.onclick = () => {
+          document.getElementById('viewer-title').textContent = name.textContent;
+          // Use Google Drive preview URL if available, otherwise local data URL
+          const viewUrl = item.url ? item.url.replace('/view', '/preview') : item.dataUrl;
+          document.getElementById('viewer-iframe').src = viewUrl;
+          document.getElementById('viewer-overlay').classList.remove('hidden');
+          document.getElementById('viewer-modal').style.display = 'flex';
+        };
+        
+        div.appendChild(left);
+        
+        // Only show delete for admin if it's local
+        if (window.isAdmin && item.id) {
+          const delBtn = document.createElement('button');
+          delBtn.textContent = '🗑';
+          delBtn.title = 'Remove Local';
+          delBtn.style = 'background: none; border: none; cursor: pointer; color: var(--red); font-size: 14px; margin-left: 10px;';
+          delBtn.onclick = async (e) => {
+            e.stopPropagation();
+            await deleteAttachmentLocal(item.id);
+            renderAttachments();
+          };
+          div.appendChild(delBtn);
+        }
+        
+        div.onmouseenter = () => div.style.background = '#e2e8f0';
+        div.onmouseleave = () => div.style.background = 'var(--gray100)';
+        
+        gallery.appendChild(div);
+      });
+    } catch (e) {
+      gallery.innerHTML = '<span style="font-size: 12px; color: var(--red);">Error loading notes.</span>';
+      console.error(e);
+    }
+  }
+
+window.openNotes = function(dayNum = 'global') {
+  currentNoteDay = dayNum;
+  const notesPanel = document.getElementById('notes-panel');
+  const notesOverlay = document.getElementById('notes-overlay');
+  const notesTextarea = document.getElementById('notes-text');
+  const notesDisplay = document.getElementById('notes-text-display');
+  const notesTitle = document.getElementById('notes-title');
+  const uploadSection = document.getElementById('upload-section');
+  
+  if (notesTitle) {
+    notesTitle.textContent = `📝 Notes for Day ${dayNum}`;
+  }
+  
+  const savedText = localStorage.getItem('da-notes-' + dayNum) || '';
+  if (window.isAdmin) {
+    if (notesTextarea) {
+      notesTextarea.value = savedText;
+      notesTextarea.style.display = 'block';
+    }
+    if (notesDisplay) notesDisplay.style.display = 'none';
+    if (uploadSection) uploadSection.style.display = 'flex';
+  } else {
+    if (notesTextarea) notesTextarea.style.display = 'none';
+    if (uploadSection) uploadSection.style.display = 'none';
+    if (notesDisplay) {
+      if (savedText.trim() === '') {
+        notesDisplay.style.display = 'none';
+      } else {
+        notesDisplay.textContent = savedText;
+        notesDisplay.style.display = 'block';
+      }
+    }
+  }
+  
+  renderAttachments();
+  
+  notesOverlay.classList.remove('hidden');
+  notesPanel.classList.remove('hidden');
+  requestAnimationFrame(() => notesPanel.classList.add('visible'));
+};
+
+// ===== NOTES PANEL BINDING =====
+let remoteAttachments = [];
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzS87l9uQJyCMVP2HybIZjbxAUdzbOggbBEdSEJpASGYnMgQAQhVHoWavR04ZSbbRBH2Q/exec';
+
+function fetchRemoteNotes() {
+  fetch(WEB_APP_URL + "?action=list")
+    .then(res => res.json())
+    .then(data => {
+      remoteAttachments = data;
+      if (document.getElementById('notes-panel').classList.contains('visible')) {
+        renderAttachments();
+      }
+    })
+    .catch(err => console.error("Could not fetch remote notes.", err));
+}
+
+function bindNotesPanel() {
+  // Fetch immediately on load
+  fetchRemoteNotes();
+
+  const notesClose = document.getElementById('notes-close');
+  const notesOverlay = document.getElementById('notes-overlay');
+  const uploadBtn = document.getElementById('upload-notes-btn');
+  const notesTextarea = document.getElementById('notes-text');
+  const notesTitle = document.getElementById('notes-title');
+
+  // Secret Admin Toggle
+  window.isAdmin = false;
+  if (notesTitle) {
+    notesTitle.addEventListener('dblclick', () => {
+      if (!window.isAdmin) {
+        const pass = prompt('Enter Author Password to unlock Uploads:');
+        if (pass === 'admin') { // Simple local password for author
+          window.isAdmin = true;
+          alert('Author Mode Unlocked! You can now upload and edit notes.');
+          window.openNotes(currentNoteDay); // Refresh panel
+        }
+      } else {
+        window.isAdmin = false;
+        alert('Author Mode Locked.');
+        window.openNotes(currentNoteDay);
+      }
+    });
+  }
+
+  // Viewer Modal Bindings
+  const viewerClose = document.getElementById('viewer-close');
+  const viewerOverlay = document.getElementById('viewer-overlay');
+  const viewerModal = document.getElementById('viewer-modal');
+  
+  function closeViewer() {
+    viewerModal.style.display = 'none';
+    viewerOverlay.classList.add('hidden');
+    document.getElementById('viewer-iframe').src = '';
+  }
+  
+  if (viewerClose) viewerClose.addEventListener('click', closeViewer);
+  if (viewerOverlay) viewerOverlay.addEventListener('click', closeViewer);
+
+  if (notesTextarea) {
+    notesTextarea.addEventListener('input', (e) => {
+      if (window.isAdmin) {
+        localStorage.setItem('da-notes-' + currentNoteDay, e.target.value);
+      }
+    });
+  }
+
+  function closeNotes() {
+    const notesPanel = document.getElementById('notes-panel');
+    notesPanel.classList.remove('visible');
+    setTimeout(() => {
+      notesPanel.classList.add('hidden');
+      notesOverlay.classList.add('hidden');
+    }, 300);
+  }
+
+  if (notesClose) notesClose.addEventListener('click', closeNotes);
+  if (notesOverlay) notesOverlay.addEventListener('click', closeNotes);
+  
+  // File Upload Logic
+  if (uploadBtn) {
+    uploadBtn.addEventListener('click', async () => {
+      const fileInput = document.getElementById('notes-file');
+      const statusDiv = document.getElementById('upload-status');
+      
+      if (fileInput.files.length === 0) {
+        statusDiv.textContent = 'Please select a file first.';
+        statusDiv.className = 'upload-status error';
+        return;
+      }
+
+      statusDiv.textContent = 'Preparing upload...';
+      statusDiv.className = 'upload-status';
+
+      const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzS87l9uQJyCMVP2HybIZjbxAUdzbOggbBEdSEJpASGYnMgQAQhVHoWavR04ZSbbRBH2Q/exec';
+      
+      const files = Array.from(fileInput.files);
+      let successCount = 0;
+
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          statusDiv.textContent = `Uploading file ${i + 1} of ${files.length}...`;
+          
+          const base64Data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = err => reject(err);
+            reader.readAsDataURL(file);
+          });
+          
+          const payload = {
+            base64: base64Data,
+            filename: `[${currentNoteDay === 'global' ? 'Global' : 'Day ' + currentNoteDay}] ${file.name}`,
+            mimeType: file.type || 'application/octet-stream'
+          };
+          
+          let uploadSucceeded = false;
+          try {
+            await fetch(WEB_APP_URL, {
+              method: 'POST',
+              mode: 'no-cors', // Avoids failing on opaque JSON response from Google
+              body: JSON.stringify(payload),
+              headers: {
+                'Content-Type': 'text/plain;charset=utf-8'
+              }
+            });
+            uploadSucceeded = true;
+          } catch (e) {
+            console.error('Fetch error:', e);
+          }
+
+          if (uploadSucceeded) {
+            successCount++;
+            await saveAttachmentLocal(currentNoteDay, file, base64Data);
+          }
+        }
+        
+        if (successCount === files.length) {
+          statusDiv.textContent = `Successfully saved ${successCount} file(s)!`;
+          statusDiv.className = 'upload-status success';
+          fileInput.value = ''; // Reset input
+          renderAttachments();
+        } else if (successCount > 0) {
+          statusDiv.textContent = `Partially saved ${successCount}/${files.length} files.`;
+          statusDiv.className = 'upload-status error';
+          renderAttachments();
+        } else {
+          statusDiv.textContent = 'Upload failed. Please try again.';
+          statusDiv.className = 'upload-status error';
+        }
+      } catch (error) {
+        statusDiv.textContent = 'Error during upload.';
+        statusDiv.className = 'upload-status error';
+        console.error('Upload error:', error);
+      }
+    });
+  }
 }
 
 // ===== STATS =====

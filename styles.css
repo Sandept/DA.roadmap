@@ -1119,7 +1119,122 @@ body {
   .stat-label {
     font-size: 9px
   }
+}
 
+/* ===== NOTES SECTION STYLES ===== */
+.header-notes-btn {
+  background: var(--yellow);
+  color: #000;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.header-notes-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  background: var(--yellow-light);
+}
+
+.notes-textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 12px;
+  border: 2px solid var(--gray200);
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 14px;
+  resize: vertical;
+  margin-bottom: 20px;
+  background: var(--gray100);
+  transition: border-color 0.2s;
+}
+
+.notes-textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: #fff;
+}
+
+.upload-section {
+  background: var(--gray100);
+  padding: 16px;
+  border-radius: 12px;
+  border: 2px dashed var(--gray200);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notes-file-input {
+  width: 100%;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--gray600);
+}
+
+.notes-file-input::file-selector-button {
+  background: var(--white);
+  border: 1.5px solid var(--gray400);
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: var(--dark);
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-right: 12px;
+}
+
+.notes-file-input::file-selector-button:hover {
+  background: var(--gray200);
+}
+
+.upload-btn {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.upload-btn:hover {
+  background: var(--blue-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+}
+
+.upload-status {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 4px;
+  font-family: var(--font);
+}
+
+.upload-status.error {
+  color: var(--red);
+}
+
+.upload-status.success {
+  color: var(--green);
+}
+
+@media(max-width:768px) {
   .rm-row {
     flex-direction: column;
     align-items: center;
