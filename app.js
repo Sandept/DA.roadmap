@@ -393,16 +393,38 @@ async function deleteAttachmentLocal(id) {
         
         div.appendChild(left);
         
-        // Only show delete for admin if it's local
-        if (window.isAdmin && item.id) {
+        // Only show delete for admin
+        if (window.isAdmin) {
           const delBtn = document.createElement('button');
           delBtn.textContent = '🗑';
-          delBtn.title = 'Remove Local';
+          delBtn.title = 'Delete File';
           delBtn.style = 'background: none; border: none; cursor: pointer; color: var(--red); font-size: 14px; margin-left: 10px;';
           delBtn.onclick = async (e) => {
             e.stopPropagation();
-            await deleteAttachmentLocal(item.id);
-            renderAttachments();
+            if (confirm("Are you sure you want to delete this file completely?")) {
+              delBtn.textContent = '⏳';
+              
+              if (typeof item.id === 'string') {
+                // It's a Google Drive file
+                try {
+                  await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ action: 'delete', fileId: item.id }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                  });
+                  // Remove from remoteAttachments UI immediately
+                  if (typeof remoteAttachments !== 'undefined') {
+                    remoteAttachments = remoteAttachments.filter(a => a.id !== item.id);
+                  }
+                } catch(err) { console.error(err); }
+              } else if (item.id) {
+                // It's a local IndexedDB file
+                await deleteAttachmentLocal(item.id);
+              }
+              
+              renderAttachments();
+            }
           };
           div.appendChild(delBtn);
         }
