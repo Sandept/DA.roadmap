@@ -433,6 +433,9 @@ window.openNotes = function(dayNum = 'global') {
     }
   }
   
+  // Always refresh remote notes when opening to ensure latest files are fetched across devices
+  fetchRemoteNotes();
+  
   renderAttachments();
   
   notesOverlay.classList.remove('hidden');
