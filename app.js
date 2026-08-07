@@ -324,9 +324,12 @@ async function deleteAttachmentLocal(id) {
       }
       
       const localItems = await getAttachmentsLocal(currentNoteDay);
-      // Merge unique by name
+      // Merge unique by normalized name (stripping prefixes like [Day 1])
       const allItems = [...items, ...localItems].reduce((acc, curr) => {
-        if (!acc.find(i => i.name === curr.name)) acc.push(curr);
+        const normalizedCurrName = curr.name.replace(/\[.*?\]\s*/, '');
+        if (!acc.find(i => i.name.replace(/\[.*?\]\s*/, '') === normalizedCurrName)) {
+          acc.push(curr);
+        }
         return acc;
       }, []);
 
