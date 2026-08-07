@@ -371,6 +371,22 @@ async function deleteAttachmentLocal(id) {
           // Use Google Drive preview URL if available, otherwise local data URL
           const viewUrl = item.url ? item.url.replace('/view', '/preview') : item.dataUrl;
           document.getElementById('viewer-iframe').src = viewUrl;
+          
+          const downloadBtn = document.getElementById('viewer-download');
+          if (downloadBtn) {
+            if (item.id) {
+              downloadBtn.href = `https://drive.google.com/uc?export=download&id=${item.id}`;
+              downloadBtn.download = '';
+              downloadBtn.style.display = 'inline-block';
+            } else if (item.dataUrl) {
+              downloadBtn.href = item.dataUrl;
+              downloadBtn.download = name.textContent;
+              downloadBtn.style.display = 'inline-block';
+            } else {
+              downloadBtn.style.display = 'none';
+            }
+          }
+          
           document.getElementById('viewer-overlay').classList.remove('hidden');
           document.getElementById('viewer-modal').style.display = 'flex';
         };
