@@ -101,10 +101,7 @@
     <div id="notes-overlay" class="sidebar-overlay hidden"></div>
     <aside id="notes-panel" class="sidebar-panel hidden">
         <div class="sidebar-header">
-            <h2 class="sb-title" id="notes-title">📝 My Notes</h2>
-            <div class="sidebar-status-btns">
-                <button class="close-btn" id="notes-close">✕</button>
-            </div>
+            <h2 class="sb-title" id="notes-title" style="margin-bottom: 0;">📝 My Notes</h2>
         </div>
         <div class="sidebar-body">
             <!-- Author Text Note (Read Only for Users) -->
@@ -141,6 +138,33 @@
         <iframe id="viewer-iframe" style="flex: 1; width: 100%; border: none; border-radius: 0 0 12px 12px;" src=""></iframe>
     </div>
 
+    <!-- Video Modal -->
+    <div id="video-overlay" class="sidebar-overlay hidden" style="z-index: 300;"></div>
+    <div id="video-modal" class="sidebar-panel hidden" style="z-index: 310; width: 700px; max-width: 90%; left: 50%; top: 50%; transform: translate(-50%, -50%); height: auto; bottom: auto; border-radius: 12px; display: none; flex-direction: column;">
+        <div class="sidebar-header" style="border-radius: 12px 12px 0 0;">
+            <h2 class="sb-title" id="video-title" style="margin-bottom: 0;">🎥 Video</h2>
+        </div>
+        <div class="sidebar-body" style="padding: 20px;">
+            <div id="video-admin-section" style="display: none; margin-bottom: 20px;">
+                <p style="font-size: 13px; color: var(--gray600); margin-bottom: 8px;">As Admin, you can add a YouTube video link for this topic.</p>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="video-link-input" placeholder="Paste YouTube link here..." style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--gray300); font-family: var(--font);">
+                    <button id="video-save-btn" style="background: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-family: var(--font);">Save</button>
+                    <button id="video-delete-btn" style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: none; font-weight: bold; font-family: var(--font);">Remove</button>
+                </div>
+                <div id="video-status" style="font-size: 13px; margin-top: 8px; font-weight: bold;"></div>
+            </div>
+            
+            <div id="video-player-container" style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; display: none; overflow: hidden;">
+                <iframe id="video-iframe" width="100%" height="100%" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border: none;"></iframe>
+            </div>
+            
+            <div id="video-empty-state" style="text-align: center; padding: 40px 20px; color: var(--gray500);">
+                No video available for this topic yet.
+            </div>
+        </div>
+    </div>
+
     <!-- Sidebar Panel -->
     <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
     <aside id="sidebar-panel" class="sidebar-panel hidden">
@@ -149,8 +173,8 @@
                 <button class="status-btn learning" id="sb-learning">📖 Learning</button>
                 <button class="status-btn done" id="sb-done">✅ Done</button>
                 <button class="status-btn skip" id="sb-skip">⏭ Skip</button>
-                <button class="status-btn" id="sb-notes-btn" style="border-color: var(--blue); color: var(--blue); margin-left: 10px;">📝 Notes</button>
-                <button class="close-btn" id="sb-close">✕</button>
+                <button class="status-btn" id="sb-notes-btn" style="border-color: var(--blue); color: var(--blue);">📝 Notes</button>
+                <button class="status-btn" id="sb-video-btn" style="border-color: var(--red); color: var(--red);">🎥 Video</button>
             </div>
         </div>
         <div class="sidebar-body" id="sidebar-body"></div>

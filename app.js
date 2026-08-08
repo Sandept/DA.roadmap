@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStats();
   bindSidebar();
   bindNotesPanel(); // New Notes binding
+  bindVideoPanel(); // New Video binding
   setTimeout(drawConnections, 400);
   window.addEventListener('resize', debounce(drawConnections, 200));
 });
@@ -212,7 +213,6 @@ function closeSidebar() {
 
 function bindSidebar() {
   document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
-  document.getElementById('sb-close').addEventListener('click', closeSidebar);
   document.getElementById('sb-learning').addEventListener('click', () => setStatus('learning'));
   document.getElementById('sb-done').addEventListener('click', () => setStatus('done'));
   document.getElementById('sb-skip').addEventListener('click', () => setStatus('skip'));
@@ -223,6 +223,17 @@ function bindSidebar() {
         const dayToOpen = activeDay; // Save it before closeSidebar clears it
         closeSidebar();
         setTimeout(() => window.openNotes(dayToOpen), 300);
+      }
+    });
+  }
+  
+  const sbVideoBtn = document.getElementById('sb-video-btn');
+  if (sbVideoBtn) {
+    sbVideoBtn.addEventListener('click', () => {
+      if (activeDay) {
+        const dayToOpen = activeDay;
+        closeSidebar();
+        setTimeout(() => window.openVideo(dayToOpen), 300);
       }
     });
   }
@@ -320,7 +331,7 @@ async function deleteAttachmentLocal(id) {
       if (typeof remoteAttachments !== 'undefined' && remoteAttachments.length > 0) {
         // Filter remote files for this day based on filename prefix e.g. "[Day 1]"
         const prefix = currentNoteDay === 'global' ? '[Global]' : `[Day ${currentNoteDay}]`;
-        items = remoteAttachments.filter(a => a.name.startsWith(prefix));
+        items = remoteAttachments.filter(a => a.name.startsWith(prefix) && !a.name.includes('_VIDEOLINK_'));
       }
       
       const localItems = await getAttachmentsLocal(currentNoteDay);
@@ -639,6 +650,188 @@ function bindNotesPanel() {
         statusDiv.textContent = 'Error during upload.';
         statusDiv.className = 'upload-status error';
         console.error('Upload error:', error);
+      }
+    });
+  }
+}
+
+window.openVideo = function(dayNum) {
+  const videoOverlay = document.getElementById('video-overlay');
+  const videoModal = document.getElementById('video-modal');
+  const videoTitle = document.getElementById('video-title');
+  const videoAdminSection = document.getElementById('video-admin-section');
+  const videoPlayerContainer = document.getElementById('video-player-container');
+  const videoEmptyState = document.getElementById('video-empty-state');
+  const videoIframe = document.getElementById('video-iframe');
+  const videoLinkInput = document.getElementById('video-link-input');
+  const videoDeleteBtn = document.getElementById('video-delete-btn');
+  const videoStatus = document.getElementById('video-status');
+  
+  currentNoteDay = dayNum; // Use currentNoteDay to ensure fetch operations align
+  if (videoTitle) videoTitle.textContent = `🎥 Video for Day ${dayNum}`;
+  if (videoStatus) {
+    if (window.location.protocol === 'file:') {
+      videoStatus.innerHTML = '⚠️ YouTube blocks embeds on local files (Error 153). Run a local server to view videos.';
+      videoStatus.style.color = 'var(--red)';
+    } else {
+      videoStatus.textContent = '';
+    }
+  }
+  
+  if (window.isAdmin) {
+    videoAdminSection.style.display = 'block';
+  } else {
+    videoAdminSection.style.display = 'none';
+  }
+  
+  // Find video link from remoteAttachments
+  const prefix = `[Day ${dayNum}]`;
+  const videoFile = remoteAttachments.find(a => a.name.startsWith(prefix) && a.name.includes('_VIDEOLINK_'));
+  
+  if (videoFile) {
+    const rawUrl = videoFile.name.split('_VIDEOLINK_ ')[1] ? videoFile.name.split('_VIDEOLINK_ ')[1].trim() : '';
+    if (rawUrl) {
+      videoIframe.src = getEmbedUrl(rawUrl);
+      videoPlayerContainer.style.display = 'block';
+      videoEmptyState.style.display = 'none';
+      if (videoLinkInput) videoLinkInput.value = rawUrl;
+      if (videoDeleteBtn) {
+        videoDeleteBtn.style.display = 'inline-block';
+        videoDeleteBtn.onclick = async () => {
+          if (confirm("Remove this video?")) {
+            videoDeleteBtn.textContent = '⏳';
+            try {
+              if (videoFile.id) {
+                await fetch(WEB_APP_URL, {
+                  method: 'POST',
+                  mode: 'no-cors',
+                  body: JSON.stringify({ action: 'delete', fileId: videoFile.id }),
+                  headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                remoteAttachments = remoteAttachments.filter(a => a.id !== videoFile.id);
+              }
+              window.openVideo(dayNum); // Refresh
+            } catch (err) {
+              console.error(err);
+              videoStatus.textContent = "Error removing video.";
+              videoStatus.style.color = "var(--red)";
+            }
+            videoDeleteBtn.textContent = 'Remove';
+          }
+        };
+      }
+    }
+  } else {
+    videoIframe.src = '';
+    videoPlayerContainer.style.display = 'none';
+    videoEmptyState.style.display = 'block';
+    if (videoLinkInput) videoLinkInput.value = '';
+    if (videoDeleteBtn) videoDeleteBtn.style.display = 'none';
+  }
+  
+  // Always fetch to ensure we have latest remote data
+  fetchRemoteNotes();
+  
+  videoOverlay.classList.remove('hidden');
+  videoModal.classList.remove('hidden');
+  videoModal.style.display = 'flex';
+};
+
+function getEmbedUrl(url) {
+  let embedUrl = url;
+  let v = null;
+  if (url.includes('youtube.com/watch')) {
+    try {
+      const urlObj = new URL(url);
+      v = urlObj.searchParams.get('v');
+    } catch (e) {}
+  } else if (url.includes('youtu.be/')) {
+    v = url.split('youtu.be/')[1].split('?')[0];
+  } else if (url.includes('youtube.com/embed/')) {
+    v = url.split('youtube.com/embed/')[1].split('?')[0];
+  } else if (url.includes('youtube-nocookie.com/embed/')) {
+    v = url.split('youtube-nocookie.com/embed/')[1].split('?')[0];
+  }
+  
+  if (v) {
+    embedUrl = `https://www.youtube.com/embed/${v.trim()}`;
+  }
+  return embedUrl;
+}
+
+function bindVideoPanel() {
+  const videoClose = document.getElementById('video-close');
+  const videoOverlay = document.getElementById('video-overlay');
+  const videoModal = document.getElementById('video-modal');
+  const videoSaveBtn = document.getElementById('video-save-btn');
+  
+  function closeVideo() {
+    videoModal.style.display = 'none';
+    videoOverlay.classList.add('hidden');
+    document.getElementById('video-iframe').src = '';
+  }
+  
+  if (videoClose) videoClose.addEventListener('click', closeVideo);
+  if (videoOverlay) videoOverlay.addEventListener('click', closeVideo);
+  
+  if (videoSaveBtn) {
+    videoSaveBtn.addEventListener('click', async () => {
+      const input = document.getElementById('video-link-input');
+      const statusDiv = document.getElementById('video-status');
+      if (!input.value.trim()) {
+        statusDiv.textContent = 'Please enter a URL.';
+        statusDiv.style.color = 'var(--red)';
+        return;
+      }
+      statusDiv.textContent = 'Removing old video...';
+      statusDiv.style.color = 'var(--blue)';
+      
+      const prefix = `[Day ${currentNoteDay}]`;
+      const existingVideos = remoteAttachments.filter(a => a.name.startsWith(prefix) && a.name.includes('_VIDEOLINK_'));
+      for (const ev of existingVideos) {
+        if (ev.id) {
+          try {
+            await fetch(WEB_APP_URL, {
+              method: 'POST',
+              mode: 'no-cors',
+              body: JSON.stringify({ action: 'delete', fileId: ev.id }),
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            });
+          } catch (e) {}
+        }
+      }
+      
+      statusDiv.textContent = 'Saving new video...';
+      
+      const payload = {
+        base64: btoa("video_link"), // dummy content
+        filename: `[Day ${currentNoteDay}] _VIDEOLINK_ ${input.value.trim()}`,
+        mimeType: 'text/plain'
+      };
+      
+      try {
+        await fetch(WEB_APP_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        
+        // Polling to see if it shows up in remoteAttachments
+        setTimeout(() => {
+          statusDiv.textContent = 'Saved! Refreshing...';
+          statusDiv.style.color = 'green';
+          fetch(WEB_APP_URL + "?action=list")
+            .then(res => res.json())
+            .then(data => {
+              remoteAttachments = data;
+              window.openVideo(currentNoteDay); // Refresh
+            });
+        }, 1500); 
+      } catch (err) {
+        console.error(err);
+        statusDiv.textContent = 'Error saving.';
+        statusDiv.style.color = 'var(--red)';
       }
     });
   }
