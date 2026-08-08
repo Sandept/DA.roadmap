@@ -1235,13 +1235,7 @@ body {
 }
 
 @media(max-width:768px) {
-  .rm-row {
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 24px
-  }
-
+  /* .rm-row flex-direction: column removed to keep desktop view on mobile */
   .rm-section {
     margin-bottom: 36px
   }
