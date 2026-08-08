@@ -879,23 +879,23 @@ function drawConnections() {
     if (isSameRow) {
       // Side-by-side connection (horizontal)
       if (fR.left < tR.left) {
-        x1 = fR.right - cRect.left;
-        y1 = fR.top + fR.height / 2 - cRect.top;
-        x2 = tR.left - cRect.left;
-        y2 = tR.top + tR.height / 2 - cRect.top;
+        x1 = fR.right - cRect.left + canvas.scrollLeft;
+        y1 = fR.top + fR.height / 2 - cRect.top + canvas.scrollTop;
+        x2 = tR.left - cRect.left + canvas.scrollLeft;
+        y2 = tR.top + tR.height / 2 - cRect.top + canvas.scrollTop;
       } else {
-        x1 = fR.left - cRect.left;
-        y1 = fR.top + fR.height / 2 - cRect.top;
-        x2 = tR.right - cRect.left;
-        y2 = tR.top + tR.height / 2 - cRect.top;
+        x1 = fR.left - cRect.left + canvas.scrollLeft;
+        y1 = fR.top + fR.height / 2 - cRect.top + canvas.scrollTop;
+        x2 = tR.right - cRect.left + canvas.scrollLeft;
+        y2 = tR.top + tR.height / 2 - cRect.top + canvas.scrollTop;
       }
       d = `M${x1},${y1} L${x2},${y2}`;
     } else {
       // Top-to-Bottom connection
-      x1 = fR.left + fR.width / 2 - cRect.left;
-      y1 = fR.bottom - cRect.top;
-      x2 = tR.left + tR.width / 2 - cRect.left;
-      y2 = tR.top - cRect.top;
+      x1 = fR.left + fR.width / 2 - cRect.left + canvas.scrollLeft;
+      y1 = fR.bottom - cRect.top + canvas.scrollTop;
+      x2 = tR.left + tR.width / 2 - cRect.left + canvas.scrollLeft;
+      y2 = tR.top - cRect.top + canvas.scrollTop;
 
       const dy = y2 - y1;
       const dx = x2 - x1;
