@@ -1586,7 +1586,14 @@ body {
 /* Responsive Mobile Styles */
 @media (max-width: 768px) {
   #roadmap-canvas {
-    min-width: 1000px; /* Keep desktop width on mobile to allow panning */
+    min-width: 100% !important; /* Take full screen width */
+    width: 100%;
+    overflow-x: auto; /* Enable native horizontal swipe within the canvas */
+    padding-bottom: 30px;
+  }
+  #roadmap-content {
+    min-width: 1000px; /* Force internal content to be 1000px so it scrolls */
+    margin: 0;
   }
   .header-content {
     flex-direction: column;

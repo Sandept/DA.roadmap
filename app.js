@@ -10,7 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
   bindSidebar();
   bindNotesPanel(); // New Notes binding
   bindVideoPanel(); // New Video binding
-  setTimeout(drawConnections, 400);
+  setTimeout(() => {
+    drawConnections();
+    // Auto-center horizontal scroll on mobile
+    const canvas = document.getElementById('roadmap-canvas');
+    if (canvas && canvas.scrollWidth > canvas.clientWidth) {
+      canvas.scrollLeft = (canvas.scrollWidth - canvas.clientWidth) / 2;
+    }
+  }, 400);
   window.addEventListener('resize', debounce(drawConnections, 200));
 });
 
