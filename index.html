@@ -100,8 +100,9 @@
     <!-- Notes Panel -->
     <div id="notes-overlay" class="sidebar-overlay hidden"></div>
     <aside id="notes-panel" class="sidebar-panel hidden">
-        <div class="sidebar-header">
+        <div class="sidebar-header" style="flex-direction: row; justify-content: space-between; align-items: center;">
             <h2 class="sb-title" id="notes-title" style="margin-bottom: 0;">📝 My Notes</h2>
+            <button class="close-btn" id="notes-close">✕</button>
         </div>
         <div class="sidebar-body">
             <!-- Author Text Note (Read Only for Users) -->
@@ -129,9 +130,9 @@
     <div id="viewer-overlay" class="sidebar-overlay hidden" style="z-index: 300;"></div>
     <div id="viewer-modal" style="position: fixed; top: 5%; left: 5%; width: 90%; height: 90%; background: #fff; z-index: 310; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; flex-direction: column;">
         <div style="padding: 12px 20px; border-bottom: 1px solid var(--gray200); display: flex; justify-content: space-between; align-items: center; background: var(--gray100); border-radius: 12px 12px 0 0;">
-            <h3 id="viewer-title" style="margin: 0; font-size: 16px; font-family: var(--font-display); color: var(--blue);">View Note</h3>
-            <div>
-                <a id="viewer-download" href="#" target="_blank" style="background: var(--blue); color: #fff; text-decoration: none; border-radius: 6px; padding: 6px 14px; margin-right: 10px; font-weight: bold; font-family: var(--font); font-size: 13px;">Download</a>
+            <h3 id="viewer-title" style="margin: 0; font-size: 16px; font-family: var(--font-display); color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; padding-right: 10px;">View Note</h3>
+            <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                <a id="viewer-download" href="#" target="_blank" style="background: var(--blue); color: #fff; text-decoration: none; border-radius: 6px; padding: 6px 14px; font-weight: bold; font-family: var(--font); font-size: 13px;">Download</a>
                 <button id="viewer-close" style="background: var(--red); color: #fff; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-weight: bold; font-family: var(--font);">Close</button>
             </div>
         </div>
@@ -141,8 +142,9 @@
     <!-- Video Modal -->
     <div id="video-overlay" class="sidebar-overlay hidden" style="z-index: 300;"></div>
     <div id="video-modal" class="sidebar-panel hidden" style="z-index: 310; width: 700px; max-width: 90%; left: 50%; top: 50%; transform: translate(-50%, -50%); height: auto; bottom: auto; border-radius: 12px; display: none; flex-direction: column;">
-        <div class="sidebar-header" style="border-radius: 12px 12px 0 0;">
+        <div class="sidebar-header" style="border-radius: 12px 12px 0 0; flex-direction: row; justify-content: space-between; align-items: center;">
             <h2 class="sb-title" id="video-title" style="margin-bottom: 0;">🎥 Video</h2>
+            <button class="close-btn" id="video-close">✕</button>
         </div>
         <div class="sidebar-body" style="padding: 20px;">
             <div id="video-admin-section" style="display: none; margin-bottom: 20px;">
