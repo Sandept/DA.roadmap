@@ -491,6 +491,8 @@ body {
   position: absolute;
   top: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 1
 }
@@ -1575,43 +1577,15 @@ body {
   }
 }
 
-/* Responsive Mobile Styles */
-@media (max-width: 768px) {
-  #roadmap-canvas {
-    min-width: 100% !important; /* Take full screen width */
-    width: 100%;
-    overflow-x: auto; /* Enable native horizontal swipe within the canvas */
-    padding-bottom: 30px;
-  }
-  #roadmap-content {
-    min-width: max-content; /* Force internal content to expand to widest row */
-    padding: 0 40px; /* Add padding to prevent nodes touching edges */
-    margin: 0;
-  }
-  .header-content {
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-  }
-  .hero-title {
-    font-size: 32px;
-  }
-  .hero-subtitle {
-    font-size: 16px;
-  }
-  .stats-board {
-    flex-direction: column;
-    width: 100%;
-    align-items: stretch;
-  }
-  .stat-card {
-    width: 100%;
-  }
+/* Responsive Mobile Styles — viewport is fixed at 1200px so the roadmap
+   renders identically to desktop. Only modals/sidebars need physical-screen
+   awareness via device-width media queries. */
+@media (max-device-width: 768px) {
   .sidebar-panel {
-    width: 100%;
+    width: 100vw;
   }
   #video-modal {
-    width: 90% !important;
+    width: 90vw !important;
     height: auto !important;
     max-height: 90vh !important;
     top: 50% !important;

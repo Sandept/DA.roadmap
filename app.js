@@ -10,14 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bindSidebar();
   bindNotesPanel(); // New Notes binding
   bindVideoPanel(); // New Video binding
-  setTimeout(() => {
-    drawConnections();
-    // Auto-center horizontal scroll on mobile
-    const canvas = document.getElementById('roadmap-canvas');
-    if (canvas && canvas.scrollWidth > canvas.clientWidth) {
-      canvas.scrollLeft = (canvas.scrollWidth - canvas.clientWidth) / 2;
-    }
-  }, 400);
+  setTimeout(drawConnections, 400);
   window.addEventListener('resize', debounce(drawConnections, 200));
 });
 
@@ -879,23 +872,23 @@ function drawConnections() {
     if (isSameRow) {
       // Side-by-side connection (horizontal)
       if (fR.left < tR.left) {
-        x1 = fR.right - cRect.left + canvas.scrollLeft;
-        y1 = fR.top + fR.height / 2 - cRect.top + canvas.scrollTop;
-        x2 = tR.left - cRect.left + canvas.scrollLeft;
-        y2 = tR.top + tR.height / 2 - cRect.top + canvas.scrollTop;
+        x1 = fR.right - cRect.left;
+        y1 = fR.top + fR.height / 2 - cRect.top;
+        x2 = tR.left - cRect.left;
+        y2 = tR.top + tR.height / 2 - cRect.top;
       } else {
-        x1 = fR.left - cRect.left + canvas.scrollLeft;
-        y1 = fR.top + fR.height / 2 - cRect.top + canvas.scrollTop;
-        x2 = tR.right - cRect.left + canvas.scrollLeft;
-        y2 = tR.top + tR.height / 2 - cRect.top + canvas.scrollTop;
+        x1 = fR.left - cRect.left;
+        y1 = fR.top + fR.height / 2 - cRect.top;
+        x2 = tR.right - cRect.left;
+        y2 = tR.top + tR.height / 2 - cRect.top;
       }
       d = `M${x1},${y1} L${x2},${y2}`;
     } else {
       // Top-to-Bottom connection
-      x1 = fR.left + fR.width / 2 - cRect.left + canvas.scrollLeft;
-      y1 = fR.bottom - cRect.top + canvas.scrollTop;
-      x2 = tR.left + tR.width / 2 - cRect.left + canvas.scrollLeft;
-      y2 = tR.top - cRect.top + canvas.scrollTop;
+      x1 = fR.left + fR.width / 2 - cRect.left;
+      y1 = fR.bottom - cRect.top;
+      x2 = tR.left + tR.width / 2 - cRect.left;
+      y2 = tR.top - cRect.top;
 
       const dy = y2 - y1;
       const dx = x2 - x1;
