@@ -331,7 +331,7 @@ async function deleteAttachmentLocal(id) {
       if (typeof remoteAttachments !== 'undefined' && remoteAttachments.length > 0) {
         // Filter remote files for this day based on filename prefix e.g. "[Day 1]"
         const prefix = currentNoteDay === 'global' ? '[Global]' : `[Day ${currentNoteDay}]`;
-        items = remoteAttachments.filter(a => a.name.startsWith(prefix) && !a.name.includes('_VIDEOLINK_'));
+        items = remoteAttachments.filter(a => a.name.startsWith(prefix) && !a.name.includes('_VIDEOLINK_') && !a.name.includes('_TEXTNOTE_'));
       }
       
       const localItems = await getAttachmentsLocal(currentNoteDay);
@@ -459,27 +459,45 @@ window.openNotes = function(dayNum = 'global') {
   const notesDisplay = document.getElementById('notes-text-display');
   const notesTitle = document.getElementById('notes-title');
   const uploadSection = document.getElementById('upload-section');
+  const saveDescBtn = document.getElementById('save-desc-btn');
+  const descStatus = document.getElementById('desc-save-status');
   
   if (notesTitle) {
     notesTitle.textContent = `📝 Notes for Day ${dayNum}`;
   }
   
-  const savedText = localStorage.getItem('da-notes-' + dayNum) || '';
+  // Find cloud-synced description from remoteAttachments
+  const prefix = dayNum === 'global' ? '[Global]' : `[Day ${dayNum}]`;
+  const textNoteFile = remoteAttachments.find(a => a.name.startsWith(prefix) && a.name.includes('_TEXTNOTE_'));
+  let cloudText = '';
+  if (textNoteFile) {
+    // Extract the text from the filename: "[Day 1] _TEXTNOTE_Written notes of Introduction."
+    cloudText = textNoteFile.name.split('_TEXTNOTE_')[1] ? textNoteFile.name.split('_TEXTNOTE_')[1].trim() : '';
+  }
+  
+  // Fallback to localStorage (for backward compatibility / admin draft)
+  const localText = localStorage.getItem('da-notes-' + dayNum) || '';
+  const displayText = cloudText || localText;
+  
   if (window.isAdmin) {
     if (notesTextarea) {
-      notesTextarea.value = savedText;
+      notesTextarea.value = cloudText || localText;
       notesTextarea.style.display = 'block';
     }
     if (notesDisplay) notesDisplay.style.display = 'none';
     if (uploadSection) uploadSection.style.display = 'flex';
+    if (saveDescBtn) saveDescBtn.style.display = 'inline-block';
+    if (descStatus) descStatus.style.display = 'none';
   } else {
     if (notesTextarea) notesTextarea.style.display = 'none';
     if (uploadSection) uploadSection.style.display = 'none';
+    if (saveDescBtn) saveDescBtn.style.display = 'none';
+    if (descStatus) descStatus.style.display = 'none';
     if (notesDisplay) {
-      if (savedText.trim() === '') {
+      if (displayText.trim() === '') {
         notesDisplay.style.display = 'none';
       } else {
-        notesDisplay.textContent = savedText;
+        notesDisplay.textContent = displayText;
         notesDisplay.style.display = 'block';
       }
     }
@@ -559,6 +577,73 @@ function bindNotesPanel() {
       if (window.isAdmin) {
         localStorage.setItem('da-notes-' + currentNoteDay, e.target.value);
       }
+    });
+  }
+
+  // Save Description to Cloud
+  const saveDescBtn = document.getElementById('save-desc-btn');
+  if (saveDescBtn) {
+    saveDescBtn.addEventListener('click', async () => {
+      const descText = document.getElementById('notes-text').value.trim();
+      const statusDiv = document.getElementById('desc-save-status');
+      statusDiv.style.display = 'block';
+      
+      if (!descText) {
+        statusDiv.textContent = 'Please write a description first.';
+        statusDiv.style.color = 'var(--red)';
+        return;
+      }
+      
+      statusDiv.textContent = 'Saving description to cloud...';
+      statusDiv.style.color = 'var(--blue)';
+      saveDescBtn.disabled = true;
+      
+      // Delete any existing _TEXTNOTE_ for this day
+      const prefix = currentNoteDay === 'global' ? '[Global]' : `[Day ${currentNoteDay}]`;
+      const existing = remoteAttachments.filter(a => a.name.startsWith(prefix) && a.name.includes('_TEXTNOTE_'));
+      for (const ex of existing) {
+        if (ex.id) {
+          try {
+            await fetch(WEB_APP_URL, {
+              method: 'POST',
+              mode: 'no-cors',
+              body: JSON.stringify({ action: 'delete', fileId: ex.id }),
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            });
+          } catch (e) {}
+        }
+      }
+      
+      // Upload new text note
+      const payload = {
+        base64: btoa("text_note"),
+        filename: `${prefix} _TEXTNOTE_${descText}`,
+        mimeType: 'text/plain'
+      };
+      
+      try {
+        await fetch(WEB_APP_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        
+        setTimeout(() => {
+          statusDiv.textContent = '✅ Description saved to cloud! Visible on all devices.';
+          statusDiv.style.color = 'green';
+          fetch(WEB_APP_URL + "?action=list")
+            .then(res => res.json())
+            .then(data => {
+              remoteAttachments = data;
+            });
+        }, 1500);
+      } catch (err) {
+        console.error(err);
+        statusDiv.textContent = 'Error saving description.';
+        statusDiv.style.color = 'var(--red)';
+      }
+      saveDescBtn.disabled = false;
     });
   }
 
