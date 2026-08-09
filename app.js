@@ -660,15 +660,14 @@ window.openVideo = function(dayNum) {
   const videoModal = document.getElementById('video-modal');
   const videoTitle = document.getElementById('video-title');
   const videoAdminSection = document.getElementById('video-admin-section');
-  const videoPlayerContainer = document.getElementById('video-player-container');
+  const videoListContainer = document.getElementById('video-list-container');
   const videoEmptyState = document.getElementById('video-empty-state');
-  const videoIframe = document.getElementById('video-iframe');
   const videoLinkInput = document.getElementById('video-link-input');
-  const videoDeleteBtn = document.getElementById('video-delete-btn');
   const videoStatus = document.getElementById('video-status');
+  const videoCount = document.getElementById('video-count');
   
-  currentNoteDay = dayNum; // Use currentNoteDay to ensure fetch operations align
-  if (videoTitle) videoTitle.textContent = `🎥 Video for Day ${dayNum}`;
+  currentNoteDay = dayNum;
+  if (videoTitle) videoTitle.textContent = `🎥 Videos for Day ${dayNum}`;
   if (videoStatus) {
     if (window.location.protocol === 'file:') {
       videoStatus.innerHTML = '⚠️ YouTube blocks embeds on local files (Error 153). Run a local server to view videos.';
@@ -684,50 +683,92 @@ window.openVideo = function(dayNum) {
     videoAdminSection.style.display = 'none';
   }
   
-  // Find video link from remoteAttachments
+  // Find ALL video links for this day from remoteAttachments
   const prefix = `[Day ${dayNum}]`;
-  const videoFile = remoteAttachments.find(a => a.name.startsWith(prefix) && a.name.includes('_VIDEOLINK_'));
+  const videoFiles = remoteAttachments.filter(a => a.name.startsWith(prefix) && a.name.includes('_VIDEOLINK_'));
   
-  if (videoFile) {
-    const rawUrl = videoFile.name.split('_VIDEOLINK_ ')[1] ? videoFile.name.split('_VIDEOLINK_ ')[1].trim() : '';
-    if (rawUrl) {
-      videoIframe.src = getEmbedUrl(rawUrl);
-      videoPlayerContainer.style.display = 'block';
-      videoEmptyState.style.display = 'none';
-      if (videoLinkInput) videoLinkInput.value = rawUrl;
-      if (videoDeleteBtn) {
-        videoDeleteBtn.style.display = 'inline-block';
-        videoDeleteBtn.onclick = async () => {
-          if (confirm("Remove this video?")) {
-            videoDeleteBtn.textContent = '⏳';
+  // Clear previous video list
+  videoListContainer.innerHTML = '';
+  
+  if (videoFiles.length > 0) {
+    videoEmptyState.style.display = 'none';
+    
+    videoFiles.forEach((vf, index) => {
+      const rawUrl = vf.name.split('_VIDEOLINK_')[1] ? vf.name.split('_VIDEOLINK_')[1].trim() : '';
+      if (!rawUrl) return;
+      
+      const embedUrl = getEmbedUrl(rawUrl);
+      
+      // Create video card
+      const card = document.createElement('div');
+      card.style.cssText = 'margin-bottom: 16px; border: 1px solid var(--gray200); border-radius: 10px; overflow: hidden; background: var(--gray100);';
+      
+      // Card header with number and remove button
+      const cardHeader = document.createElement('div');
+      cardHeader.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--white); border-bottom: 1px solid var(--gray200);';
+      
+      const label = document.createElement('span');
+      label.style.cssText = 'font-size: 13px; font-weight: 700; color: var(--gray600); font-family: var(--font);';
+      label.textContent = `📹 Video ${index + 1}`;
+      cardHeader.appendChild(label);
+      
+      if (window.isAdmin) {
+        const removeBtn = document.createElement('button');
+        removeBtn.style.cssText = 'background: var(--red); color: white; border: none; padding: 4px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; font-family: var(--font);';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', async () => {
+          if (confirm(`Remove Video ${index + 1}?`)) {
+            removeBtn.textContent = '⏳';
             try {
-              if (videoFile.id) {
+              if (vf.id) {
                 await fetch(WEB_APP_URL, {
                   method: 'POST',
                   mode: 'no-cors',
-                  body: JSON.stringify({ action: 'delete', fileId: videoFile.id }),
+                  body: JSON.stringify({ action: 'delete', fileId: vf.id }),
                   headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                 });
-                remoteAttachments = remoteAttachments.filter(a => a.id !== videoFile.id);
+                remoteAttachments = remoteAttachments.filter(a => a.id !== vf.id);
               }
               window.openVideo(dayNum); // Refresh
             } catch (err) {
               console.error(err);
-              videoStatus.textContent = "Error removing video.";
-              videoStatus.style.color = "var(--red)";
+              removeBtn.textContent = 'Error';
             }
-            videoDeleteBtn.textContent = 'Remove';
           }
-        };
+        });
+        cardHeader.appendChild(removeBtn);
       }
-    }
+      
+      card.appendChild(cardHeader);
+      
+      // iframe player
+      const playerWrap = document.createElement('div');
+      playerWrap.style.cssText = 'width: 100%; aspect-ratio: 16/9; background: #000;';
+      
+      const iframe = document.createElement('iframe');
+      iframe.width = '100%';
+      iframe.height = '100%';
+      iframe.src = embedUrl;
+      iframe.frameBorder = '0';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+      iframe.allowFullscreen = true;
+      iframe.style.border = 'none';
+      iframe.setAttribute('loading', 'lazy');
+      
+      playerWrap.appendChild(iframe);
+      card.appendChild(playerWrap);
+      
+      videoListContainer.appendChild(card);
+    });
+    
+    if (videoCount) videoCount.textContent = `${videoFiles.length} of 10 videos added`;
   } else {
-    videoIframe.src = '';
-    videoPlayerContainer.style.display = 'none';
     videoEmptyState.style.display = 'block';
-    if (videoLinkInput) videoLinkInput.value = '';
-    if (videoDeleteBtn) videoDeleteBtn.style.display = 'none';
+    if (videoCount) videoCount.textContent = '0 of 10 videos added';
   }
+  
+  // Clear input for next add
+  if (videoLinkInput) videoLinkInput.value = '';
   
   // Always fetch to ensure we have latest remote data
   fetchRemoteNotes();
@@ -768,7 +809,9 @@ function bindVideoPanel() {
   function closeVideo() {
     videoModal.style.display = 'none';
     videoOverlay.classList.add('hidden');
-    document.getElementById('video-iframe').src = '';
+    // Stop all iframes
+    const iframes = document.getElementById('video-list-container').querySelectorAll('iframe');
+    iframes.forEach(f => f.src = '');
   }
   
   if (videoClose) videoClose.addEventListener('click', closeVideo);
@@ -778,34 +821,31 @@ function bindVideoPanel() {
     videoSaveBtn.addEventListener('click', async () => {
       const input = document.getElementById('video-link-input');
       const statusDiv = document.getElementById('video-status');
-      if (!input.value.trim()) {
+      const url = input.value.trim();
+      
+      if (!url) {
         statusDiv.textContent = 'Please enter a URL.';
         statusDiv.style.color = 'var(--red)';
         return;
       }
-      statusDiv.textContent = 'Removing old video...';
-      statusDiv.style.color = 'var(--blue)';
       
+      // Check current count
       const prefix = `[Day ${currentNoteDay}]`;
       const existingVideos = remoteAttachments.filter(a => a.name.startsWith(prefix) && a.name.includes('_VIDEOLINK_'));
-      for (const ev of existingVideos) {
-        if (ev.id) {
-          try {
-            await fetch(WEB_APP_URL, {
-              method: 'POST',
-              mode: 'no-cors',
-              body: JSON.stringify({ action: 'delete', fileId: ev.id }),
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-            });
-          } catch (e) {}
-        }
+      if (existingVideos.length >= 10) {
+        statusDiv.textContent = 'Maximum 10 videos reached. Remove one first.';
+        statusDiv.style.color = 'var(--red)';
+        return;
       }
       
-      statusDiv.textContent = 'Saving new video...';
+      statusDiv.textContent = 'Saving video...';
+      statusDiv.style.color = 'var(--blue)';
+      videoSaveBtn.disabled = true;
       
+      const timestamp = Date.now();
       const payload = {
-        base64: btoa("video_link"), // dummy content
-        filename: `[Day ${currentNoteDay}] _VIDEOLINK_ ${input.value.trim()}`,
+        base64: btoa("video_link"),
+        filename: `[Day ${currentNoteDay}] _VIDEOLINK_${url}`,
         mimeType: 'text/plain'
       };
       
@@ -817,7 +857,6 @@ function bindVideoPanel() {
           headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
         
-        // Polling to see if it shows up in remoteAttachments
         setTimeout(() => {
           statusDiv.textContent = 'Saved! Refreshing...';
           statusDiv.style.color = 'green';
@@ -825,14 +864,15 @@ function bindVideoPanel() {
             .then(res => res.json())
             .then(data => {
               remoteAttachments = data;
-              window.openVideo(currentNoteDay); // Refresh
+              window.openVideo(currentNoteDay);
             });
-        }, 1500); 
+        }, 1500);
       } catch (err) {
         console.error(err);
         statusDiv.textContent = 'Error saving.';
         statusDiv.style.color = 'var(--red)';
       }
+      videoSaveBtn.disabled = false;
     });
   }
 }
